@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Alert } from "react-native";
 
@@ -33,7 +34,7 @@ AuthAxiosInstance.interceptors.request.use(
 export function Register(data) {
 	return BaseAxiosInstance({
 		method: "post",
-		url: "/user/register",
+		url: "/auth/register",
 		data: data,
 	});
 }
@@ -41,7 +42,52 @@ export function Register(data) {
 export function Login(data) {
 	return BaseAxiosInstance({
 		method: "post",
-		url: "/user/login",
+		url: "/auth/login",
+		data: data,
+	});
+}
+
+export function GetUsers() {
+	return AuthAxiosInstance({
+		method: "get",
+		url: "/user/get-users",
+	});
+}
+
+export function GetFriends() {
+	return AuthAxiosInstance({
+		method: "get",
+		url: "/user/get-friends",
+	});
+}
+
+export function FindUsers(params) {
+	return AuthAxiosInstance({
+		method: "get",
+		url: "/user/find-users",
+		params: params,
+	});
+}
+
+export function GetFriendRequests() {
+	return AuthAxiosInstance({
+		method: "get",
+		url: "/user/get-friend-requests",
+	});
+}
+
+export function SendFriendRequest(data) {
+	return AuthAxiosInstance({
+		method: "post",
+		url: "/user/send-friend-request",
+		data: data,
+	});
+}
+
+export function AcceptFriendRequest(data) {
+	return AuthAxiosInstance({
+		method: "post",
+		url: "/user/accept-friend-request",
 		data: data,
 	});
 }

@@ -8,14 +8,20 @@ import HomeScreen from "./screens/HomeScreen";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import WithSafeArea from "./components/WithSafeArea";
 import {
+	AddFriendRoute,
 	AppStackRoute,
 	AuthCheckRoute,
 	AuthStackRoute,
+	FriendRequestsRoute,
 	HomeRoute,
 	LoginRoute,
 	RegisterRoute,
+	SettingsRoute,
 } from "./util/routes";
 import AuthCheck from "./components/AuthCheck";
+import Settings from "./screens/Settings";
+import AddFriend from "./screens/AddFriend";
+import FriendRequests from "./screens/FriendRequests";
 
 const Stack = createNativeStackNavigator();
 
@@ -30,7 +36,7 @@ const AuthStack = () => {
 			<Stack.Screen
 				name={RegisterRoute}
 				component={WithSafeArea(RegisterScreen)}
-				options={{ headerShown: false }}
+				// options={{ headerShown: false }}
 			/>
 		</Stack.Navigator>
 	);
@@ -40,6 +46,9 @@ const AppStack = () => {
 	return (
 		<Stack.Navigator>
 			<Stack.Screen name={HomeRoute} component={HomeScreen} />
+			<Stack.Screen name={SettingsRoute} component={Settings} />
+			<Stack.Screen name={AddFriendRoute} component={AddFriend} />
+			<Stack.Screen name={FriendRequestsRoute} component={FriendRequests} />
 		</Stack.Navigator>
 	);
 };

@@ -1,7 +1,10 @@
-import { Avatar, Icon, List, MD3Colors } from "react-native-paper";
+import { Avatar, Button, Icon, List, MD3Colors } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
+import { View } from "react-native";
+import { useUserHook } from "../api/hooks";
 
-const UserList = ({ users }) => {
+const UserList = ({ users, extra, extraText, extraFunction }) => {
+	const { sendFriendRequest } = useUserHook();
 	return (
 		<List.Section>
 			{users?.map((user, index) => {
@@ -12,9 +15,13 @@ const UserList = ({ users }) => {
 							paddingHorizontal: 8,
 							borderRadius: 16,
 						}}
-						onPress={() => {
-							console.log(user?._id);
-						}}
+						onPress={
+							extra
+								? null
+								: () => {
+										console.log(user._id);
+								  }
+						}
 						title={user?.name}
 						description="latest message"
 						left={() => (
@@ -34,6 +41,27 @@ const UserList = ({ users }) => {
 								}
 							/>
 						)}
+						right={
+							extra
+								? () => (
+										<View
+											style={{
+												flex: 1,
+												justifyContent: "center",
+											}}>
+											<Button
+												compact={true}
+												onPress={() => {
+													console.log(user._id);
+													extraFunction({ id: user._id });
+												}}
+												mode="contained">
+												{extraText}
+											</Button>
+										</View>
+								  )
+								: null
+						}
 					/>
 				);
 			})}

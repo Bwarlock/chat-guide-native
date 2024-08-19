@@ -18,8 +18,8 @@ import {
 	List,
 	Avatar,
 } from "react-native-paper";
-import { useAuthHook } from "../api/hooks";
-import { useNavigation } from "@react-navigation/native";
+import { useAuthHook, useUserHook } from "../api/hooks";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import {
 	Ionicons,
 	MaterialIcons,
@@ -27,6 +27,12 @@ import {
 } from "@expo/vector-icons";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import UserList from "../components/UserList";
+import {
+	AddFriendRoute,
+	FriendRequestsRoute,
+	SettingsRoute,
+} from "../util/routes";
+import { useSelector } from "react-redux";
 
 // const Tab = createMaterialTopTabNavigator();
 
@@ -34,23 +40,26 @@ export default function HomeScreen() {
 	const [menuVisible, setMenuVisible] = useState(false);
 	const openMenu = () => setMenuVisible(true);
 	const closeMenu = () => setMenuVisible(false);
+	const { currentUser, friends, users } = useSelector((state) => state.global);
 
 	const navigation = useNavigation();
-	const { logoutUser } = useAuthHook();
+	const route = useRoute();
 
+	const { logoutUser } = useAuthHook();
+	const { getUsers, getFriendRequests, getFriends } = useUserHook();
 	useLayoutEffect(() => {
 		navigation.setOptions({
 			header: () => (
 				<Appbar.Header>
 					{/* <Appbar.BackAction onPress={() => navigation.goBack() } /> */}
-					<Appbar.Content title="Chat-Guide" />
+					<Appbar.Content title={route.name} />
 
 					<Appbar.Action
 						icon={() => (
 							<Ionicons name="notifications-outline" size={24} color="black" />
 						)}
 						// icon="account-alert-outline"
-						onPress={() => navigation.navigate("FriendsRequest")}
+						onPress={() => navigation.navigate(FriendRequestsRoute)}
 					/>
 					<Menu
 						style={{
@@ -60,13 +69,34 @@ export default function HomeScreen() {
 						onDismiss={closeMenu}
 						anchorPosition="bottom"
 						anchor={<Appbar.Action icon="dots-vertical" onPress={openMenu} />}>
-						<Menu.Item onPress={() => {}} title="Settings" />
-						<Menu.Item onPress={logoutUser} title="Logout" />
+						<Menu.Item
+							onPress={() => {
+								closeMenu();
+								navigation.navigate(SettingsRoute);
+							}}
+							title="Settings"
+						/>
+						<Menu.Item
+							onPress={() => {
+								closeMenu();
+								logoutUser();
+							}}
+							title="Logout"
+						/>
 					</Menu>
 				</Appbar.Header>
 			),
 		});
 	}, [menuVisible]);
+
+	useEffect(() => {
+		// Starting Singular Requests
+		// need redux finally
+		getUsers();
+		getFriends();
+		getFriendRequests();
+		console.log("audoaoosdai");
+	}, []);
 
 	return (
 		// <Tab.Navigator
@@ -84,24 +114,15 @@ export default function HomeScreen() {
 					paddingVertical: 8,
 				}}>
 				{/* <Text>hi</Text> */}
-				<UserList
-					users={[
-						{
-							_id: "sda",
-							name: "Someone",
-						},
-						{
-							_id: "sd",
-							name: "Someone",
-						},
-					]}
-				/>
+				<UserList users={friends} extra={false} />
 			</ScrollView>
 			<FAB
 				icon={"account-plus"}
 				// icon={"plus"}
 				// icon={() => <Ionicons name="person-add" size={24} color="black" />}
-				onPress={() => console.log("Pressed")}
+				onPress={() => {
+					navigation.navigate(AddFriendRoute);
+				}}
 				visible={true}
 				iconMode={"static"}
 				style={{
