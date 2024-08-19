@@ -1,5 +1,4 @@
-import { StatusBar } from "expo-status-bar";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import StackNavigator from "./StackNavigator";
 import React from "react";
 import {
@@ -18,7 +17,6 @@ const theme = {
 export default function App() {
 	return (
 		<PaperProvider theme={theme}>
-			<StatusBar>hi</StatusBar>
 			<StackNavigator />
 		</PaperProvider>
 	);
