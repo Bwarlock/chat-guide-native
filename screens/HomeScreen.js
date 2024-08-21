@@ -1,4 +1,5 @@
 import {
+	RefreshControl,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -17,6 +18,9 @@ import {
 	FAB,
 	List,
 	Avatar,
+	Icon,
+	MD3Colors,
+	Divider,
 } from "react-native-paper";
 import { useAuthHook, useUserHook } from "../api/hooks";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -26,9 +30,9 @@ import {
 	MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
-import UserList from "../components/UserList";
 import {
 	AddFriendRoute,
+	ChatMessageRoute,
 	FriendRequestsRoute,
 	SettingsRoute,
 } from "../util/routes";
@@ -40,7 +44,8 @@ export default function HomeScreen() {
 	const [menuVisible, setMenuVisible] = useState(false);
 	const openMenu = () => setMenuVisible(true);
 	const closeMenu = () => setMenuVisible(false);
-	const { currentUser, friends, users } = useSelector((state) => state.global);
+	const { currentUser, friends, users, friendsLoading, requestLoading } =
+		useSelector((state) => state.global);
 
 	const navigation = useNavigation();
 	const route = useRoute();
@@ -90,12 +95,11 @@ export default function HomeScreen() {
 	}, [menuVisible]);
 
 	useEffect(() => {
-		// Starting Singular Requests
-		// need redux finally
-		getUsers();
+		// getUsers();
+		// Need to Get Message Queue
 		getFriends();
 		getFriendRequests();
-		console.log("audoaoosdai");
+		console.log("home Screen");
 	}, []);
 
 	return (
@@ -112,9 +116,56 @@ export default function HomeScreen() {
 				contentContainerStyle={{
 					flex: 1,
 					paddingVertical: 8,
-				}}>
-				{/* <Text>hi</Text> */}
-				<UserList users={friends} extra={false} />
+				}}
+				refreshControl={
+					<RefreshControl
+						refreshing={friendsLoading || requestLoading}
+						onRefresh={() => {
+							// get message queue too
+							getFriends();
+							getFriendRequests();
+						}}
+					/>
+				}>
+				<List.Section>
+					{friends?.map((user, index) => {
+						return (
+							<List.Item
+								key={index}
+								style={{
+									paddingHorizontal: 8,
+									borderRadius: 16,
+								}}
+								onPress={() => {
+									navigation.navigate({
+										name: ChatMessageRoute,
+										params: { id: user._id },
+									});
+									console.log(user._id);
+								}}
+								title={user?.name}
+								description="latest message"
+								left={() => (
+									<Avatar.Image
+										style={{
+											alignItems: "center",
+											justifyContent: "center",
+											backgroundColor: MD3Colors.secondary90,
+										}}
+										size={48}
+										source={
+											user?.image
+												? user?.image
+												: ({ size }) => {
+														return <Icon source="account" size={32} />;
+												  }
+										}
+									/>
+								)}
+							/>
+						);
+					})}
+				</List.Section>
 			</ScrollView>
 			<FAB
 				icon={"account-plus"}

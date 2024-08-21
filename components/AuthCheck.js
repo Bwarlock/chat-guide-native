@@ -11,7 +11,7 @@ const AuthCheck = ({ navigation }) => {
 		const checkToken = async () => {
 			try {
 				const token = await AsyncStorage.getItem("token");
-
+				// if only toekn get the user first
 				if (token) {
 					const user = await AsyncStorage.getItem("user");
 					dispatch(storeCurrentUser(JSON.parse(user)));

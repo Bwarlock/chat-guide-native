@@ -2,28 +2,16 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialValue = {
 	currentUser: {},
-	users: [
-		{
-			_id: "sda",
-			name: "Someone",
-		},
-		{
-			_id: "sd",
-			name: "Someone",
-		},
-	],
-	friends: [
-		{
-			_id: "sda",
-			name: "Someone",
-		},
-		{
-			_id: "sd",
-			name: "Someone",
-		},
-	],
-	friendRequests: [],
+	users: [],
+	friends: [],
+	friendRequests: {
+		received: [],
+		sent: [],
+	},
 	loading: false,
+	friendsLoading: false,
+	requestLoading: false,
+	usersLoading: false,
 };
 
 const globalSlice = createSlice({
@@ -48,6 +36,15 @@ const globalSlice = createSlice({
 		globalLoading: (state, action) => {
 			state.loading = action.payload;
 		},
+		setFriendsLoading: (state, action) => {
+			state.friendsLoading = action.payload;
+		},
+		setRequestLoading: (state, action) => {
+			state.requestLoading = action.payload;
+		},
+		setUsersLoading: (state, action) => {
+			state.usersLoading = action.payload;
+		},
 	},
 });
 
@@ -58,5 +55,8 @@ export const {
 	storeFriendRequests,
 	clearGlobal,
 	globalLoading,
+	setFriendsLoading,
+	setRequestLoading,
+	setUsersLoading,
 } = globalSlice.actions;
 export default globalSlice.reducer;

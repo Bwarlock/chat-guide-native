@@ -17,6 +17,8 @@ import {
 	FAB,
 	List,
 	Avatar,
+	Icon,
+	MD3Colors,
 } from "react-native-paper";
 import { useAuthHook, useUserHook } from "../api/hooks";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -26,7 +28,7 @@ import {
 	MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
-import UserList from "../components/UserList";
+
 import {
 	AddFriendRoute,
 	FriendRequestsRoute,
@@ -61,7 +63,7 @@ export default function AddFriend() {
 		// Starting Singular Requests
 		// need redux finally
 		getUsers();
-		console.log("Add Friend");
+		console.log("Add Friend Screen");
 	}, []);
 
 	return (
@@ -71,12 +73,56 @@ export default function AddFriend() {
 				paddingVertical: 8,
 			}}>
 			{/* <Text>hi</Text> */}
-			<UserList
-				users={users}
-				extra={true}
-				extraText={"Add Friend"}
-				extraFunction={sendFriendRequest}
-			/>
+
+			<List.Section>
+				{users?.map((user, index) => {
+					return (
+						<List.Item
+							key={index}
+							style={{
+								paddingHorizontal: 8,
+								borderRadius: 16,
+							}}
+							title={user?.name}
+							description="latest message"
+							left={() => (
+								<Avatar.Image
+									style={{
+										alignItems: "center",
+										justifyContent: "center",
+										backgroundColor: MD3Colors.secondary90,
+									}}
+									size={48}
+									source={
+										user?.image
+											? user?.image
+											: ({ size }) => {
+													return <Icon source="account" size={32} />;
+											  }
+									}
+								/>
+							)}
+							right={() => (
+								<View
+									style={{
+										flex: 1,
+										justifyContent: "center",
+									}}>
+									<Button
+										compact={true}
+										onPress={() => {
+											console.log(user._id);
+											sendFriendRequest({ id: user._id });
+										}}
+										mode="contained">
+										Add Friend
+									</Button>
+								</View>
+							)}
+						/>
+					);
+				})}
+			</List.Section>
 		</ScrollView>
 	);
 }

@@ -2,14 +2,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Alert } from "react-native";
 
-const BASE_URL = "http://192.168.1.6:8000/api";
+const BASE_URL = "http://192.168.1.3:8000/api";
 // const BASE_URL = "http://192.168.7.181:8000/api";
 
-const BaseAxiosInstance = axios.create({
+export const BaseAxiosInstance = axios.create({
 	baseURL: BASE_URL,
 });
 
-const AuthAxiosInstance = axios.create({
+export const AuthAxiosInstance = axios.create({
 	baseURL: BASE_URL,
 });
 
@@ -84,10 +84,47 @@ export function SendFriendRequest(data) {
 	});
 }
 
+export function CancelFriendRequest(data) {
+	return AuthAxiosInstance({
+		method: "post",
+		url: "/user/cancel-friend-request",
+		data: data,
+	});
+}
+
 export function AcceptFriendRequest(data) {
 	return AuthAxiosInstance({
 		method: "post",
 		url: "/user/accept-friend-request",
+		data: data,
+	});
+}
+
+export function GetMessages() {
+	return AuthAxiosInstance({
+		method: "get",
+		url: "/message/get-messages",
+	});
+}
+
+export function DeleteMessageQueue() {
+	return AuthAxiosInstance({
+		method: "delete",
+		url: "/message/delete-message-queue",
+	});
+}
+
+export function RestoreMessages() {
+	return AuthAxiosInstance({
+		method: "get",
+		url: "/message/restore-messages",
+	});
+}
+
+export function CreateMessage(data) {
+	return AuthAxiosInstance({
+		method: "post",
+		url: "/message/create-message",
 		data: data,
 	});
 }

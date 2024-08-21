@@ -4,6 +4,7 @@ export const HomeRoute = "Chat-Guide";
 export const SettingsRoute = "Settings";
 export const FriendRequestsRoute = "Friend-Requests";
 export const AddFriendRoute = "Add-Friend";
+export const ChatMessageRoute = "Chat-Message";
 
 export const AppStackRoute = "AppStack";
 export const AuthStackRoute = "AuthStack";

@@ -2,12 +2,13 @@ import React from "react";
 import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const WithSafeArea = (Component) => (props) =>
-	(
+const WithSafeArea = (Component) => {
+	return (props) => (
 		<SafeAreaView style={styles.safeArea}>
 			<Component {...props} />
 		</SafeAreaView>
 	);
+};
 
 const styles = StyleSheet.create({
 	safeArea: {

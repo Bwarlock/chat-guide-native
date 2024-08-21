@@ -6,8 +6,9 @@ import {
 	Keyboard,
 	ImageBackground,
 	ScrollView,
+	Alert,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	Text,
 	Button,
@@ -18,9 +19,11 @@ import {
 } from "react-native-paper";
 import background_1 from "../assets/background_1.jpg";
 import { useNavigation } from "@react-navigation/native";
-import { RegisterRoute } from "../util/routes";
+import { AppStackRoute, AuthStackRoute, RegisterRoute } from "../util/routes";
 import { validateEmail } from "../util/functions";
 import { useAuthHook } from "../api/hooks";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { storeCurrentUser } from "../store/globalSlice";
 
 const initialValues = { username: "", password: "" };
 const initialErrors = { username: "", password: "" };
