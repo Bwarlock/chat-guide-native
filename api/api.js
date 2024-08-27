@@ -2,8 +2,15 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { Alert } from "react-native";
 
-const BASE_URL = "http://192.168.1.3:8000/api";
+// export const SOCKET_URL =
+// 	"https://chat-guide-d0dqd0ggfxawhjes.eastasia-01.azurewebsites.net";
+// const BASE_URL =
+// 	"https://chat-guide-d0dqd0ggfxawhjes.eastasia-01.azurewebsites.net/api";
+
+export const SOCKET_URL = "http://192.168.1.5:8000";
+const BASE_URL = "http://192.168.1.5:8000/api";
 // const BASE_URL = "http://192.168.7.181:8000/api";
+// const BASE_URL = "http://192.168.126.128:8000/api";
 
 export const BaseAxiosInstance = axios.create({
 	baseURL: BASE_URL,
@@ -44,6 +51,13 @@ export function Login(data) {
 		method: "post",
 		url: "/auth/login",
 		data: data,
+	});
+}
+
+export function GetSingleUser(id) {
+	return AuthAxiosInstance({
+		method: "get",
+		url: `/user/get-user/${id}`,
 	});
 }
 
@@ -100,17 +114,10 @@ export function AcceptFriendRequest(data) {
 	});
 }
 
-export function GetMessages() {
+export function FetchMissedMessages() {
 	return AuthAxiosInstance({
 		method: "get",
 		url: "/message/get-messages",
-	});
-}
-
-export function DeleteMessageQueue() {
-	return AuthAxiosInstance({
-		method: "delete",
-		url: "/message/delete-message-queue",
 	});
 }
 
@@ -125,6 +132,14 @@ export function CreateMessage(data) {
 	return AuthAxiosInstance({
 		method: "post",
 		url: "/message/create-message",
+		data: data,
+	});
+}
+
+export function ReceivedMessages(data) {
+	return AuthAxiosInstance({
+		method: "post",
+		url: "/message/received-messages",
 		data: data,
 	});
 }

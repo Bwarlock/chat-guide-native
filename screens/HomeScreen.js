@@ -21,8 +21,14 @@ import {
 	Icon,
 	MD3Colors,
 	Divider,
+	Badge,
 } from "react-native-paper";
-import { useAuthHook, useUserHook } from "../api/hooks";
+import {
+	useAuthHook,
+	useMessageHook,
+	useSocket,
+	useUserHook,
+} from "../api/hooks";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import {
 	Ionicons,
@@ -36,22 +42,49 @@ import {
 	FriendRequestsRoute,
 	SettingsRoute,
 } from "../util/routes";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+// import { createTable } from "../store/db";
+// import useTransactionFunctions from "../store/transactions";
 
 // const Tab = createMaterialTopTabNavigator();
 
 export default function HomeScreen() {
+	const socket = useSocket();
+
 	const [menuVisible, setMenuVisible] = useState(false);
 	const openMenu = () => setMenuVisible(true);
 	const closeMenu = () => setMenuVisible(false);
-	const { currentUser, friends, users, friendsLoading, requestLoading } =
-		useSelector((state) => state.global);
-
+	const {
+		currentUser,
+		friends,
+		users,
+		friendsLoading,
+		token,
+		requestLoading,
+		friendRequests,
+	} = useSelector((state) => state.global);
+	const { latest, messages, messageById } = useSelector(
+		(state) => state.message
+	);
+	const dispatch = useDispatch();
 	const navigation = useNavigation();
 	const route = useRoute();
 
 	const { logoutUser } = useAuthHook();
-	const { getUsers, getFriendRequests, getFriends } = useUserHook();
+	const { getFriendRequests, getFriends } = useUserHook();
+	const { restoreMessages, fetchMissedMessages } = useMessageHook();
+	// const { createTable, insertMessage, getMessages } = useTransactionFunctions();
+
+	useEffect(() => {
+		// setTimeout(() => {
+		// 	createTable();
+		// }, 5000);
+		fetchMissedMessages();
+		getFriends();
+		getFriendRequests();
+		console.log("home Screen");
+	}, []);
+
 	useLayoutEffect(() => {
 		navigation.setOptions({
 			header: () => (
@@ -61,19 +94,46 @@ export default function HomeScreen() {
 
 					<Appbar.Action
 						icon={() => (
-							<Ionicons name="notifications-outline" size={24} color="black" />
+							<View
+								style={{
+									position: "relative",
+								}}>
+								<Ionicons
+									name="notifications-outline"
+									size={24}
+									color="black"
+								/>
+								<Badge
+									style={{
+										position: "absolute",
+										top: -4,
+										right: -4,
+									}}
+									size={14}>
+									{friendRequests?.received?.length}
+								</Badge>
+							</View>
 						)}
 						// icon="account-alert-outline"
 						onPress={() => navigation.navigate(FriendRequestsRoute)}
 					/>
 					<Menu
-						style={{
-							marginTop: 24,
-						}}
+						style={
+							{
+								// marginTop: 24,
+							}
+						}
 						visible={menuVisible}
 						onDismiss={closeMenu}
 						anchorPosition="bottom"
 						anchor={<Appbar.Action icon="dots-vertical" onPress={openMenu} />}>
+						<Menu.Item
+							onPress={() => {
+								closeMenu();
+								restoreMessages(currentUser);
+							}}
+							title="Restore Chat"
+						/>
 						<Menu.Item
 							onPress={() => {
 								closeMenu();
@@ -92,15 +152,7 @@ export default function HomeScreen() {
 				</Appbar.Header>
 			),
 		});
-	}, [menuVisible]);
-
-	useEffect(() => {
-		// getUsers();
-		// Need to Get Message Queue
-		getFriends();
-		getFriendRequests();
-		console.log("home Screen");
-	}, []);
+	}, [menuVisible, friendRequests.received]);
 
 	return (
 		// <Tab.Navigator
@@ -122,6 +174,7 @@ export default function HomeScreen() {
 						refreshing={friendsLoading || requestLoading}
 						onRefresh={() => {
 							// get message queue too
+							fetchMissedMessages();
 							getFriends();
 							getFriendRequests();
 						}}
@@ -139,12 +192,15 @@ export default function HomeScreen() {
 								onPress={() => {
 									navigation.navigate({
 										name: ChatMessageRoute,
-										params: { id: user._id },
+										params: { user: user },
 									});
-									console.log(user._id);
 								}}
 								title={user?.name}
-								description="latest message"
+								description={
+									latest[user?._id]?.messageType == "text"
+										? latest[user?._id].message
+										: "Image"
+								}
 								left={() => (
 									<Avatar.Image
 										style={{

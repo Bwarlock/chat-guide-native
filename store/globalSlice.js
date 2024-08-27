@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialValue = {
+	token: "",
 	currentUser: {},
 	users: [],
 	friends: [],
@@ -20,6 +21,9 @@ const globalSlice = createSlice({
 	reducers: {
 		storeCurrentUser: (state, action) => {
 			state.currentUser = action.payload;
+		},
+		storeToken: (state, action) => {
+			state.token = action.payload;
 		},
 		clearGlobal: (state) => {
 			return { ...initialValue };
@@ -49,6 +53,7 @@ const globalSlice = createSlice({
 });
 
 export const {
+	storeToken,
 	storeCurrentUser,
 	storeUsers,
 	storeFriends,
