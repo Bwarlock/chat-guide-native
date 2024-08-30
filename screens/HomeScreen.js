@@ -127,13 +127,13 @@ export default function HomeScreen() {
 						onDismiss={closeMenu}
 						anchorPosition="bottom"
 						anchor={<Appbar.Action icon="dots-vertical" onPress={openMenu} />}>
-						<Menu.Item
+						{/* <Menu.Item
 							onPress={() => {
 								closeMenu();
 								restoreMessages(currentUser);
 							}}
 							title="Restore Chat"
-						/>
+						/> */}
 						<Menu.Item
 							onPress={() => {
 								closeMenu();
@@ -141,13 +141,13 @@ export default function HomeScreen() {
 							}}
 							title="Settings"
 						/>
-						<Menu.Item
+						{/* <Menu.Item
 							onPress={() => {
 								closeMenu();
 								logoutUser();
 							}}
 							title="Logout"
-						/>
+						/> */}
 					</Menu>
 				</Appbar.Header>
 			),

@@ -2,6 +2,25 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { Alert } from "react-native";
 
+export const imageExist = createAsyncThunk(
+	"message/imageExist",
+	async (payload, { getState }) => {
+		try {
+			const state = getState();
+			const { id } = payload;
+			const message = { ...state["message"].messageById[id], imageExist: true };
+
+			await AsyncStorage.setItem(id, JSON.stringify(message));
+
+			return { id, message };
+		} catch (error) {
+			console.log("thunk ", error);
+			Alert.alert("Error", error?.message);
+			return error;
+		}
+	}
+);
+
 export const fetchMessagesFromDB = createAsyncThunk(
 	"message/fetchMessagesFromDB",
 	async ({ id, func = () => {} }, { getState, rejectWithValue }) => {
@@ -90,7 +109,24 @@ const messageSlice = createSlice({
 		// 	console.log(id, messages);
 		// 	state.messages[id] = [...(state.messages[id] || []), ...messages];
 		// },
+		createTempMessage: (state, action) => {
+			const data = action.payload;
+			state.messages[data.recipientId] = [
+				...(state.messages[data.recipientId] || []),
+				data._id,
+			];
+			state.messageById = { ...state.messageById, [data._id]: data };
+		},
+		deleteTempMessage: (state, action) => {
+			const data = action.payload;
+			state.messages[data.recipientId] = state.messages[
+				data.recipientId
+			].filter((msg) => msg != data._id);
 
+			const newObj = { ...state.messageById };
+			delete newObj[data._id];
+			state.messageById = newObj;
+		},
 		clearMessages: (state) => {
 			return { ...initialValue };
 		},
@@ -134,11 +170,24 @@ const messageSlice = createSlice({
 			console.log("why");
 			return state;
 		});
+
+		builder.addCase(imageExist.pending.type, (state, action) => {
+			return state;
+		});
+		builder.addCase(imageExist.fulfilled.type, (state, action) => {
+			const { id, message } = action.payload;
+			state.messageById[id] = message;
+		});
+		builder.addCase(imageExist.rejected.type, (state, action) => {
+			return state;
+		});
 	},
 });
 
 export const {
 	// storeMessages,
+	createTempMessage,
+	deleteTempMessage,
 	clearMessages,
 	clearSpecificMessages,
 	storeLatestMessage,

@@ -8,9 +8,11 @@ import {
 	FindUsers,
 	GetFriendRequests,
 	GetFriends,
+	GetImage,
 	GetSingleUser,
 	GetUsers,
 	Login,
+	PrivateUser,
 	ReceivedMessages,
 	Register,
 	RestoreMessages,
@@ -30,18 +32,24 @@ import {
 	storeCurrentUser,
 	storeFriendRequests,
 	storeFriends,
+	storePrivate,
 	storeToken,
 	storeUsers,
 } from "../store/globalSlice";
 import {
 	clearMessages,
 	clearSpecificMessages,
+	createTempMessage,
+	deleteTempMessage,
+	imageExist,
 	storeFetchingCheck,
 	storeLatestMessage,
 	storeMessages,
 } from "../store/messageSlice";
 import { io } from "socket.io-client";
 import { useEffect, useRef, useState } from "react";
+import { createUniqueIdentifier } from "../util/functions";
+import * as FileSystem from "expo-file-system";
 
 export const useAuthHook = () => {
 	const navigation = useNavigation();
@@ -121,12 +129,12 @@ export function useSocket() {
 				console.log("Connected to socket.io server");
 			});
 
-			sock.on("receiveMessage", (message) => {
+			sock.on("receiveMessage", async (message) => {
 				console.log("message recieved", message, isFetchingMissedMessages);
 				// if (isFetchingMissedMessages) {
 				// 	messageBuffer.current.push(message);
 				// } else {
-				storeMessageFunction([message]);
+				await storeMessageFunction([message]);
 				// dispatch(storeMessages({ id: message?.senderId, messages: [message] }));
 				// dispatch(
 				// 	storeLatestMessage({ id: message?.senderId, message: message })
@@ -188,12 +196,32 @@ export function useSocket() {
 export const useMessageHook = () => {
 	const dispatch = useDispatch();
 
-	const storeMessageFunction = (msges, currentUserId) => {
+	const getImage = async (message) => {
+		try {
+			const response = await GetImage(message._id);
+			const base64Image = response.data;
+
+			const fileUri = FileSystem.documentDirectory + message.imageUrl;
+
+			// Save the file using Expo's FileSystem
+			await FileSystem.writeAsStringAsync(fileUri, base64Image, {
+				encoding: FileSystem.EncodingType.Base64,
+			});
+
+			console.log("Image saved at:", fileUri);
+			dispatch(imageExist({ id: message._id }));
+		} catch (error) {
+			console.log("image get", error);
+			Alert.alert("Error", error?.response?.data?.message ?? error?.message);
+		}
+	};
+
+	const storeMessageFunction = async (msges, currentUserId) => {
 		const messages = {};
 		const messageById = {};
 		const messagesIds = [];
 		try {
-			msges.forEach((msg) => {
+			for (const msg of msges) {
 				const id =
 					msg.senderId === currentUserId ? msg.recipientId : msg.senderId;
 				if (!messages[id]) {
@@ -204,10 +232,19 @@ export const useMessageHook = () => {
 				}
 				console.log(id);
 				console.log(msg);
+				let exists = false;
+				if (msg.messageType == "image") {
+					const fileInfo = await FileSystem.getInfoAsync(
+						FileSystem.documentDirectory + msg.imageUrl
+					);
+					exists = fileInfo.exists;
+				}
 				messageById[id][msg._id] = msg;
+				messageById[id][msg._id].imageExist = exists;
 				messages[id].push(msg._id);
 				messagesIds.push(msg._id);
-			});
+			}
+
 			console.log("sad", messageById);
 			Object.keys(messages).forEach((key) => {
 				dispatch(
@@ -234,18 +271,65 @@ export const useMessageHook = () => {
 		}
 		return { messages, messagesIds };
 	};
-	const createMessage = async (data) => {
+	const createMessage = async (data, image) => {
+		const newData = {
+			...data,
+			_id: createUniqueIdentifier(),
+			createdAt: new Date().toString(),
+		};
 		try {
-			const response = await CreateMessage(data);
+			const formdata = new FormData();
+
+			if (data.messageType == "image" && image?.uri) {
+				// save to file system
+				// data . url  <-- image.uri
+				console.log("insideeee");
+				const directory = FileSystem.documentDirectory;
+				const newPath = directory + image.fileName;
+
+				// Create the directory if it doesn't exist
+				// const directoryInfo = await FileSystem.getInfoAsync(directory);
+				// if (!directoryInfo.exists) {
+				// 	await FileSystem.makeDirectoryAsync(directory, {
+				// 		intermediates: true,
+				// 	});
+				// }
+
+				await FileSystem.copyAsync({
+					from: image?.uri,
+					to: newPath,
+				});
+				data.imageUrl = image.fileName;
+				newData.imageUrl = image.fileName;
+				newData.imageExist = true;
+
+				formdata.append("image", {
+					uri: image.uri,
+					name: image.fileName,
+					type: image.mimeType,
+				});
+			}
+
+			Object.keys(data).forEach((key) => {
+				formdata.append("" + key, "" + data[key]);
+			});
+			console.log(data);
+
+			console.log("formmm", newData);
+			dispatch(createTempMessage(newData));
+			const response = await CreateMessage(formdata);
+			dispatch(deleteTempMessage(newData));
+
 			console.log("message created");
 			if (response?.data?.chatMessage) {
-				storeMessageFunction(
+				await storeMessageFunction(
 					[response?.data?.chatMessage],
 					response?.data?.chatMessage?.senderId
 				);
 			}
 		} catch (error) {
-			console.log("create hook");
+			dispatch(deleteTempMessage(newData));
+			console.log("create hook", error);
 			Alert.alert("Error", error?.response?.data?.message ?? error?.message);
 		}
 	};
@@ -256,7 +340,7 @@ export const useMessageHook = () => {
 			const response = await FetchMissedMessages();
 			console.log("message getting");
 			if (response?.data?.chatMessages?.length) {
-				const { messages, messagesIds } = storeMessageFunction(
+				const { messages, messagesIds } = await storeMessageFunction(
 					response?.data?.chatMessages
 				);
 
@@ -276,13 +360,18 @@ export const useMessageHook = () => {
 			if (response?.data?.chatMessages?.length) {
 				// clear previous ones (most likely case is its empty if u r pressing restore tho)
 				dispatch(clearSpecificMessages());
-				storeMessageFunction(response?.data?.chatMessages, currentUser._id);
+				await storeMessageFunction(
+					response?.data?.chatMessages,
+					currentUser._id
+				);
+				Alert.alert("Success", "Restored Chat");
 			}
 		} catch (error) {
 			Alert.alert("Error", error?.response?.data?.message ?? error?.message);
 		}
 	};
 	return {
+		getImage,
 		storeMessageFunction,
 		createMessage,
 		fetchMissedMessages,
@@ -399,6 +488,16 @@ export const useUserHook = () => {
 			Alert.alert("Error", error?.response?.data?.message ?? error?.message);
 		}
 	};
+
+	const privateUser = async (data) => {
+		try {
+			const response = await PrivateUser(data);
+			dispatch(storePrivate(data.private));
+			Alert.alert("Success", response?.data?.message);
+		} catch (error) {
+			Alert.alert("Error", error?.response?.data?.message ?? error?.message);
+		}
+	};
 	return {
 		getSingleUser,
 		getFriends,
@@ -408,5 +507,6 @@ export const useUserHook = () => {
 		sendFriendRequest,
 		cancelFriendRequest,
 		acceptFriendRequest,
+		privateUser,
 	};
 };

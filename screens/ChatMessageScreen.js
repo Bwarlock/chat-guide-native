@@ -7,6 +7,12 @@ import {
 	KeyboardAvoidingView,
 	Keyboard,
 	FlatList,
+	Alert,
+	Image,
+	Pressable,
+	ImageBackground,
+	SafeAreaView,
+	TouchableHighlight,
 } from "react-native";
 import {
 	Appbar,
@@ -24,10 +30,10 @@ import {
 	ActivityIndicator,
 	Icon,
 	Menu,
+	Portal,
 } from "react-native-paper";
 import EmojiSelector, { Categories } from "react-native-emoji-selector";
 
-import { launchCamera } from "react-native-image-picker";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -37,8 +43,13 @@ import {
 } from "../store/messageSlice";
 import { useMessageHook } from "../api/hooks";
 import { Colors } from "react-native/Libraries/NewAppScreen";
+import * as ImagePicker from "expo-image-picker";
+import { createUniqueIdentifier } from "../util/functions";
+import * as FileSystem from "expo-file-system";
+import ImageView from "react-native-image-viewing";
 
 export default function ChatMessageScreen() {
+	const [image, setImage] = useState();
 	const [menuVisible, setMenuVisible] = useState(false);
 	const openMenu = () => setMenuVisible(true);
 	const closeMenu = () => setMenuVisible(false);
@@ -48,8 +59,9 @@ export default function ChatMessageScreen() {
 		(state) => state.message
 	);
 	const { currentUser } = useSelector((state) => state.global);
+
 	const [showEmojiSelector, setShowEmojiSelector] = useState(false);
-	const { createMessage, fetchMissedMessages } = useMessageHook();
+	const { createMessage, fetchMissedMessages, getImage } = useMessageHook();
 
 	const dispatch = useDispatch();
 	const route = useRoute();
@@ -96,6 +108,50 @@ export default function ChatMessageScreen() {
 		scrollToBottom();
 	}, []);
 
+	const handlePickImage = async () => {
+		try {
+			let result = await ImagePicker.launchImageLibraryAsync({
+				allowsEditing: true,
+				// aspect: [4, 3],
+				quality: 1,
+			});
+
+			console.log(result.assets[0]);
+
+			if (!result.canceled) {
+				if (result.assets[0].fileSize > 10 * 1024 * 1024) {
+					Alert.alert("Error", "Image can't be more than 5mb");
+					return;
+				}
+				setImage(result.assets[0]);
+			}
+		} catch (error) {
+			Alert.alert("Error", "Unable to PicK Image");
+		}
+	};
+
+	const handleCameraImage = async () => {
+		try {
+			let result = await ImagePicker.launchCameraAsync({
+				allowsEditing: true,
+				// aspect: [4, 3],
+				quality: 1,
+			});
+
+			console.log(result);
+
+			if (!result.canceled) {
+				if (result.assets[0].fileSize > 10 * 1024 * 1024) {
+					Alert.alert("Error", "Image can't be more than 10mb");
+					return;
+				}
+				setImage(result.assets[0]);
+			}
+		} catch (error) {
+			Alert.alert("Error", "Unable to Open Camera");
+		}
+	};
+
 	useLayoutEffect(() => {
 		navigation.setOptions({
 			header: () => (
@@ -106,7 +162,7 @@ export default function ChatMessageScreen() {
 						title={
 							<List.Item
 								style={{
-									margin: 8,
+									paddingHorizontal: 8,
 									alignItems: "center",
 								}}
 								onPress={() => {
@@ -123,12 +179,11 @@ export default function ChatMessageScreen() {
 								left={() => (
 									<Avatar.Image
 										style={{
-											margin: 0,
 											alignItems: "center",
 											justifyContent: "center",
 											backgroundColor: MD3Colors.secondary90,
 										}}
-										size={36}
+										size={32}
 										source={
 											user?.image
 												? user?.image
@@ -152,7 +207,7 @@ export default function ChatMessageScreen() {
 						onDismiss={closeMenu}
 						anchorPosition="bottom"
 						anchor={<Appbar.Action icon="dots-vertical" onPress={openMenu} />}>
-						<Menu.Item onPress={() => {}} title="Menu Item" />
+						{/* <Menu.Item onPress={() => {}} title="Menu Item" /> */}
 					</Menu>
 				</Appbar.Header>
 			),
@@ -170,16 +225,26 @@ export default function ChatMessageScreen() {
 	};
 
 	const handleSend = () => {
-		if (message.trim()) {
-			createMessage({
+		if (message.trim() || image) {
+			const data = {
 				senderId: currentUser._id,
 				recipientId: user._id,
-				messageType: "text",
+				messageType: image ? "image" : "text",
 				message: message,
-			});
-			console.log(message, "cha ascreen");
+				imageUrl: "", // self created uri
+			};
+			const imageData = {
+				fileName: createUniqueIdentifier() + "_" + image?.fileName,
+				fileSize: image?.fileSize,
+				mimeType: image?.mimeType,
+				uri: image?.uri,
+			};
+			createMessage(data, imageData);
+
+			console.log(message, image, "cha ascreen");
 		}
 		setMessage("");
+		setImage(null);
 	};
 	const handleToggleEmojiPicker = () => {
 		if (showEmojiSelector) {
@@ -194,17 +259,9 @@ export default function ChatMessageScreen() {
 			}, 0);
 		}
 	};
-	const handlePickImage = () => {
-		launchCamera({}, (response) => {
-			if (!response.didCancel && !response.error) {
-				setMessages([
-					...messages,
-					{ image: response.assets[0].uri, id: messages.length },
-				]);
-			}
-		});
-	};
 
+	const [imageVisible, setImageVisible] = useState(false);
+	const [currentImage, setCurrentImage] = useState();
 	return (
 		<>
 			{loading ? (
@@ -217,6 +274,17 @@ export default function ChatMessageScreen() {
 					style={{
 						flex: 1,
 					}}>
+					<SafeAreaView>
+						<ImageView
+							images={currentImage}
+							imageIndex={0}
+							visible={imageVisible}
+							onRequestClose={() => {
+								setImageVisible(false);
+								setCurrentImage([]);
+							}}
+						/>
+					</SafeAreaView>
 					<FlatList
 						ref={scrollViewRef}
 						onContentSizeChange={handleContentSizeChange}
@@ -249,7 +317,7 @@ export default function ChatMessageScreen() {
 										}}>
 										{/* want to add label here */}
 										<Surface
-											elevation={3}
+											elevation={1}
 											style={{
 												borderRadius: 8,
 												overflow: "hidden",
@@ -262,9 +330,64 @@ export default function ChatMessageScreen() {
 												style={{ padding: 8 }}
 												onPress={() => {}}>
 												<View>
+													{item?.messageType == "image" ? (
+														item?.imageExist ? (
+															<TouchableHighlight
+																style={{
+																	flexDirection: "row",
+																	justifyContent:
+																		item?.senderId == currentUser._id
+																			? "flex-end"
+																			: "flex-start",
+																}}
+																onPress={() => {
+																	setCurrentImage([
+																		{
+																			uri:
+																				FileSystem.documentDirectory +
+																				item?.imageUrl,
+																		},
+																	]);
+																	setImageVisible(true);
+																}}>
+																<Image
+																	src={
+																		FileSystem.documentDirectory +
+																		item?.imageUrl
+																	}
+																	style={{
+																		width: 120,
+																		height: 120,
+																	}}
+																/>
+															</TouchableHighlight>
+														) : (
+															<IconButton
+																style={{
+																	width: 120,
+																	height: 120,
+																}}
+																icon={"download"}
+																onPress={() => {
+																	getImage(item);
+																	console.log("pressing");
+																	// image id
+																	// message id
+																	//  exists convert to true
+																}}
+															/>
+														)
+													) : (
+														<></>
+													)}
+
 													<Text
 														variant="titleMedium"
 														style={{
+															alignSelf:
+																item?.senderId == currentUser._id
+																	? "flex-end"
+																	: "flex-start",
 															flexShrink: 1, // Allows text to shrink if necessary
 															wordBreak: "break-word",
 														}}>
@@ -297,12 +420,33 @@ export default function ChatMessageScreen() {
 						keyExtractor={(item, index) => index}
 						// contentContainerStyle={{}}
 					/>
-
+					{image && (
+						<View
+							style={{
+								width: "100%",
+								flexDirection: "row",
+								justifyContent: "flex-end",
+								alignItems: "center",
+							}}>
+							<Image
+								source={{ uri: image?.uri || "" }}
+								style={{
+									width: 75,
+									height: 75,
+								}}
+							/>
+							<IconButton
+								icon={"close"}
+								onPress={() => {
+									setImage(null);
+								}}
+							/>
+						</View>
+					)}
 					<Surface
-						theme={{ colors: { backdrop: "transparent" } }}
 						style={{
 							flexDirection: "row",
-							alignItems: "center",
+							alignItems: "flex-end",
 							paddingHorizontal: 8,
 							paddingVertical: 8,
 						}}>
@@ -331,9 +475,16 @@ export default function ChatMessageScreen() {
 									style={{
 										marginTop: 16,
 									}}
-									icon={"emoticon"}
-									onPress={handleToggleEmojiPicker}
+									icon={"attachment"}
+									onPress={handlePickImage}
 								/>
+								// <TextInput.Icon
+								// 	style={{
+								// 		marginTop: 16,
+								// 	}}
+								// 	icon={"emoticon"}
+								// 	onPress={handleToggleEmojiPicker}
+								// />
 							}
 							right={
 								<TextInput.Icon
@@ -341,7 +492,7 @@ export default function ChatMessageScreen() {
 										marginTop: 16,
 									}}
 									icon={"camera"}
-									onPress={handlePickImage}
+									onPress={handleCameraImage}
 								/>
 							}
 						/>
@@ -351,7 +502,7 @@ export default function ChatMessageScreen() {
 								margin: 0,
 								marginLeft: 4,
 							}}
-							size={44}
+							size={48}
 							mode="contained"
 							onPress={handleSend}
 						/>

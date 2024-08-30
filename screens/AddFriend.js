@@ -195,6 +195,7 @@ export default function AddFriend() {
 							right={() => (
 								<View
 									style={{
+										minWidth: 60,
 										flex: 1,
 										justifyContent: "center",
 									}}>

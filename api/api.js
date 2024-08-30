@@ -7,10 +7,11 @@ import { Alert } from "react-native";
 // const BASE_URL =
 // 	"https://chat-guide-d0dqd0ggfxawhjes.eastasia-01.azurewebsites.net/api";
 
-export const SOCKET_URL = "http://192.168.1.5:8000";
-const BASE_URL = "http://192.168.1.5:8000/api";
+export const SOCKET_URL = "http://192.168.1.4:8000";
+const BASE_URL = "http://192.168.1.4:8000/api";
+
+// export const SOCKET_URL = "http://192.168.7.181:8000";
 // const BASE_URL = "http://192.168.7.181:8000/api";
-// const BASE_URL = "http://192.168.126.128:8000/api";
 
 export const BaseAxiosInstance = axios.create({
 	baseURL: BASE_URL,
@@ -57,7 +58,7 @@ export function Login(data) {
 export function GetSingleUser(id) {
 	return AuthAxiosInstance({
 		method: "get",
-		url: `/user/get-user/${id}`,
+		url: `/user/get-user`,
 	});
 }
 
@@ -114,6 +115,14 @@ export function AcceptFriendRequest(data) {
 	});
 }
 
+export function PrivateUser(data) {
+	return AuthAxiosInstance({
+		method: "post",
+		url: "/user/private",
+		data: data,
+	});
+}
+
 export function FetchMissedMessages() {
 	return AuthAxiosInstance({
 		method: "get",
@@ -133,6 +142,7 @@ export function CreateMessage(data) {
 		method: "post",
 		url: "/message/create-message",
 		data: data,
+		headers: { "Content-Type": "multipart/form-data" },
 	});
 }
 
@@ -141,5 +151,12 @@ export function ReceivedMessages(data) {
 		method: "post",
 		url: "/message/received-messages",
 		data: data,
+	});
+}
+
+export function GetImage(id) {
+	return AuthAxiosInstance({
+		method: "get",
+		url: `/message/get-image/${id}`,
 	});
 }

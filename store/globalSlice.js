@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialValue = {
 	token: "",
+	theme: "Light",
 	currentUser: {},
 	users: [],
 	friends: [],
@@ -49,6 +50,12 @@ const globalSlice = createSlice({
 		setUsersLoading: (state, action) => {
 			state.usersLoading = action.payload;
 		},
+		storeTheme: (state, action) => {
+			state.theme = action.payload;
+		},
+		storePrivate: (state, action) => {
+			state.currentUser.private = action.payload;
+		},
 	},
 });
 
@@ -63,5 +70,7 @@ export const {
 	setFriendsLoading,
 	setRequestLoading,
 	setUsersLoading,
+	storeTheme,
+	storePrivate,
 } = globalSlice.actions;
 export default globalSlice.reducer;
